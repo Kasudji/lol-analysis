@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RainyDaysInTokyo — LoL Analysis 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg: #1c1e26;
+    --surface: #242731;
+    --surface2: #2c2f3e;
+    --border: #343748;
+    --accent: #7c83f5;
+    --accent2: #f5a623;
+    --accent3: #50e3c2;
+    --win: #52d68a;
+    --lose: #f56565;
+    --text: #eef0f8;
+    --text2: #b0b4cc;
+    --muted: #6b7090;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:15px; line-height:1.6; }
+  .hero { background:linear-gradient(160deg,#1c1e26 0%,#22253a 50%,#1c1e26 100%); border-bottom:1px solid var(--border); padding:64px 40px 48px; text-align:center; position:relative; overflow:hidden; }
+  .hero::before { content:''; position:absolute; top:-100px; right:-100px; width:400px; height:400px; background:radial-gradient(circle,rgba(124,131,245,0.08) 0%,transparent 70%); border-radius:50%; }
+  .hero::after { content:''; position:absolute; bottom:-80px; left:-80px; width:300px; height:300px; background:radial-gradient(circle,rgba(80,227,194,0.06) 0%,transparent 70%); border-radius:50%; }
+  .hero-tag { font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:11px; letter-spacing:3px; text-transform:uppercase; margin-bottom:14px; position:relative; z-index:1; }
+  .hero h1 { font-size:clamp(2.8rem,6vw,5.5rem); font-weight:700; color:var(--text); letter-spacing:-1px; margin-bottom:8px; position:relative; z-index:1; }
+  .hero h1 em { font-style:normal; background:linear-gradient(135deg,var(--accent),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .hero-period { font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:12px; letter-spacing:1px; position:relative; z-index:1; }
+  .hero-rank-journey { display:inline-flex; align-items:center; gap:14px; margin-top:22px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:100px; padding:10px 24px; position:relative; z-index:1; }
+  .rank-badge { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:500; }
+  .rank-badge.plat { color:#63b3ed; }
+  .rank-badge.emerald { color:var(--win); }
+  .rank-lp { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent3); }
+  .container { max-width:1440px; margin:0 auto; padding:32px 24px; display:grid; gap:14px; grid-template-columns:repeat(12,1fr); }
+  .section-label { grid-column:span 12; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; letter-spacing:1px; color:var(--text2); text-transform:uppercase; padding:14px 0 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .section-label em { font-style:normal; color:var(--accent); }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .card-title { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; letter-spacing:1px; color:var(--text2); text-transform:uppercase; margin-bottom:20px; }
+  .span-2{grid-column:span 2;} .span-3{grid-column:span 3;} .span-4{grid-column:span 4;}
+  .span-6{grid-column:span 6;} .span-8{grid-column:span 8;} .span-12{grid-column:span 12;}
+  .overview-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .stat-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:18px 14px; text-align:center; transition:border-color 0.15s; }
+  .stat-item:hover { border-color:var(--accent); }
+  .stat-big { font-size:clamp(1.5rem,2.5vw,2.4rem); font-weight:700; line-height:1.1; }
+  .stat-label { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:1.5px; margin-top:6px; text-transform:uppercase; }
+  .kda-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
+  .kda-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; text-align:center; }
+  .dmg-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-top:10px; }
+  .dmg-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center; }
+  .multikill-row { display:flex; gap:10px; margin-top:10px; }
+  .multikill-badge { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 8px; text-align:center; }
+  .champ-table { width:100%; border-collapse:collapse; }
+  .champ-table th { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; letter-spacing:1px; color:var(--text2); text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); text-transform:uppercase; }
+  .champ-table td { padding:12px 14px; border-bottom:1px solid rgba(52,55,72,0.6); color:var(--text); }
+  .champ-table tbody tr:hover td { background:var(--surface2); }
+  .champ-name { font-weight:600; font-size:14px; }
+  .champ-games { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text2); }
+  .obj-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .obj-name { width:130px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text2); }
+  .obj-bar-wrap { flex:1; height:26px; background:var(--surface2); border-radius:6px; overflow:hidden; display:flex; }
+  .obj-bar-with { height:100%; background:linear-gradient(90deg,#276749,var(--win)); display:flex; align-items:center; padding:0 10px; font-size:11px; font-weight:600; color:#fff; font-family:'JetBrains Mono',monospace; }
+  .obj-bar-without { height:100%; background:linear-gradient(90deg,#742a2a,var(--lose)); display:flex; align-items:center; padding:0 10px; font-size:11px; font-weight:600; color:#fff; font-family:'JetBrains Mono',monospace; }
+  .obj-diff { width:56px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; text-align:right; }
+  .tilt-grid { display:flex; flex-wrap:wrap; gap:3px; }
+  .tilt-dot { width:15px; height:15px; border-radius:3px; cursor:pointer; transition:transform 0.1s; }
+  .tilt-dot:hover { transform:scale(1.5); }
+  .support-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .support-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:18px; text-align:center; }
+  .footer { text-align:center; padding:36px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:2px; border-top:1px solid var(--border); }
+  canvas { max-width:100%; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">League of Legends · EUW · Ranked Solo/Duo</div>
+  <h1>RainyDays<em>InTokyo</em></h1>
+  <div class="hero-period">Season Analysis · 1.1.2026 – 4.4.2026 · 164 games</div>
+  <div class="hero-rank-journey">
+    <span class="rank-badge plat">Platinum III</span>
+    <span style="color:var(--muted)">→</span>
+    <span class="rank-badge emerald">Emerald III</span>
+    <span style="color:var(--border)">·</span>
+    <span class="rank-lp">+403 LP</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="section-label"><em>01</em> — Overview</div>
+  <div class="card span-12">
+    <div class="card-title">Season Stats</div>
+    <div class="overview-grid">
+      <div class="stat-item"><div class="stat-big" style="color:var(--win)">54.3%</div><div class="stat-label">Win Rate</div></div>
+      <div class="stat-item"><div class="stat-big" style="color:var(--accent)">3.12</div><div class="stat-label">Avg KDA</div></div>
+      <div class="stat-item"><div class="stat-big" style="color:var(--text)">164</div><div class="stat-label">Games Played</div></div>
+      <div class="stat-item"><div class="stat-big" style="color:var(--accent3)">30.9 min</div><div class="stat-label">Avg Game Length</div></div>
+      <div class="stat-item"><div class="stat-big" style="color:var(--lose)">20</div><div class="stat-label">Surrenders</div></div>
+      <div class="stat-item"><div class="stat-big" style="color:var(--accent2)">6</div><div class="stat-label">Best Win Streak</div></div>
+      <div class="stat-item"><div class="stat-big" style="color:var(--text2)">3</div><div class="stat-label">Worst Lose Streak</div></div>
+      <div class="stat-item"><div class="stat-big" style="color:var(--accent)">+403</div><div class="stat-label">LP Gained</div></div>
+    </div>
+    <div class="kda-row">
+      <div class="kda-item"><div class="stat-big" style="color:var(--win)">470</div><div class="stat-label">Your Kills</div></div>
+      <div class="kda-item"><div class="stat-big" style="color:var(--lose)">1,109</div><div class="stat-label">Your Deaths</div></div>
+      <div class="kda-item"><div class="stat-big" style="color:var(--accent3)">1,958</div><div class="stat-label">Your Assists</div></div>
+    </div>
+    <div class="dmg-grid">
+      <div class="dmg-item"><div class="stat-big" style="color:var(--accent2);font-size:1.3rem">15,340</div><div class="stat-label">Avg Dmg Dealt</div></div>
+      <div class="dmg-item"><div class="stat-big" style="color:var(--accent2);font-size:1.3rem">2,515,896</div><div class="stat-label">Total Dmg Dealt</div></div>
+      <div class="dmg-item"><div class="stat-big" style="color:var(--lose);font-size:1.3rem">27,051</div><div class="stat-label">Avg Dmg Taken</div></div>
+      <div class="dmg-item"><div class="stat-big" style="color:var(--lose);font-size:1.3rem">4,436,505</div><div class="stat-label">Total Dmg Taken</div></div>
+      <div class="dmg-item"><div class="stat-big" style="color:var(--win);font-size:1.3rem">489,265</div><div class="stat-label">Total Heals</div></div>
+      <div class="dmg-item"><div class="stat-big" style="color:var(--accent3);font-size:1.3rem">284,021</div><div class="stat-label">Total Shield</div></div>
+    </div>
+    <div style="margin-top:10px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase">Multi Kills</div>
+      <div class="multikill-row">
+        <div class="multikill-badge"><div class="stat-big" style="font-size:1.7rem;color:var(--accent)">16</div><div class="stat-label">Double</div></div>
+        <div class="multikill-badge"><div class="stat-big" style="font-size:1.7rem;color:var(--accent2)">2</div><div class="stat-label">Triple</div></div>
+        <div class="multikill-badge"><div class="stat-big" style="font-size:1.7rem;color:var(--accent3)">0</div><div class="stat-label">Quadra</div></div>
+        <div class="multikill-badge"><div class="stat-big" style="font-size:1.7rem;color:#f6e05e">0</div><div class="stat-label">Penta</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label"><em>02</em> — Champion Pool</div>
+  <div class="card span-12">
+    <div class="card-title">Champion Stats</div>
+    <table class="champ-table">
+      <thead><tr><th>Champion</th><th>Games</th><th>Winrate</th><th>Record</th><th>Avg KDA</th><th></th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="champ-name">Shaco</td>
+          <td class="champ-games">20</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">45.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">9W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">11L</span>
+          </td>
+          <td>3.02</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:45%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:55%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Milio</td>
+          <td class="champ-games">8</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">4L</span>
+          </td>
+          <td>2.74</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Soraka</td>
+          <td class="champ-games">7</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">57.1%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">3L</span>
+          </td>
+          <td>7.13</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:57%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:43%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Nami</td>
+          <td class="champ-games">7</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">57.1%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">3L</span>
+          </td>
+          <td>5.37</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:57%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:43%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Senna</td>
+          <td class="champ-games">7</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">57.1%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">3L</span>
+          </td>
+          <td>2.27</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:57%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:43%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Thresh</td>
+          <td class="champ-games">7</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">57.1%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">3L</span>
+          </td>
+          <td>4.01</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:57%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:43%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Karma</td>
+          <td class="champ-games">6</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">66.7%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">2L</span>
+          </td>
+          <td>4.33</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:67%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:33%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Lux</td>
+          <td class="champ-games">6</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">66.7%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">2L</span>
+          </td>
+          <td>4.5</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:67%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:33%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Zilean</td>
+          <td class="champ-games">6</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">3W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">3L</span>
+          </td>
+          <td>3.62</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Sett</td>
+          <td class="champ-games">6</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">83.3%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">5W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>2.82</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:83%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:17%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">TahmKench</td>
+          <td class="champ-games">5</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">20.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">4L</span>
+          </td>
+          <td>1.45</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:20%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:80%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Poppy</td>
+          <td class="champ-games">5</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">80.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>2.67</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:80%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:20%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">TwistedFate</td>
+          <td class="champ-games">4</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">75.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">3W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>2.59</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:75%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:25%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Renata</td>
+          <td class="champ-games">4</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">2W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">2L</span>
+          </td>
+          <td>3.1</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Kled</td>
+          <td class="champ-games">4</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">4W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>3.24</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Rakan</td>
+          <td class="champ-games">3</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">66.7%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">2W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>3.1</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:67%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:33%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Orianna</td>
+          <td class="champ-games">3</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">66.7%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">2W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>2.65</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:67%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:33%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Zaahen</td>
+          <td class="champ-games">3</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">3L</span>
+          </td>
+          <td>1.37</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Sona</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>6.56</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Shen</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>3.12</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Viktor</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>3.06</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Pantheon</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>2.4</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Ornn</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.6</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">XinZhao</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">2L</span>
+          </td>
+          <td>0.32</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Morgana</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">2L</span>
+          </td>
+          <td>1.41</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Ivern</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">2L</span>
+          </td>
+          <td>2.16</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Leona</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">2L</span>
+          </td>
+          <td>0.98</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Blitzcrank</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.76</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">DrMundo</td>
+          <td class="champ-games">2</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">50.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.42</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:50%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:50%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Yuumi</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>2.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Yorick</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>5.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Yasuo</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>0.57</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Ashe</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>7.67</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">AurelionSol</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>0.33</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Camille</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Aurora</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Bard</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>2.71</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Alistar</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>2.86</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Swain</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>0.93</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Braum</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.57</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Briar</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.36</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Sion</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>0.78</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Shyvana</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.5</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Lulu</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>2.17</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Ezreal</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>2.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Lillia</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>3.4</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Seraphine</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.67</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Fiora</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>0.69</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Galio</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>2.2</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Gnar</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>2.5</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Pyke</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>1.25</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Gwen</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>2.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Irelia</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>1.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Janna</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>1.71</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Nautilus</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--lose);font-weight:700;font-size:15px">0.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">0W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">1L</span>
+          </td>
+          <td>3.8</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:0%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:100%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">KSante</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>1.12</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Akali</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>1.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Mel</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>1.7</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Malphite</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>20.0</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="champ-name">Aatrox</td>
+          <td class="champ-games">1</td>
+          <td style="color:var(--win);font-weight:700;font-size:15px">100.0%</td>
+          <td style="white-space:nowrap">
+            <span style="color:var(--win);font-weight:700">1W</span>
+            <span style="color:var(--muted);margin:0 3px">/</span>
+            <span style="color:var(--lose);font-weight:700">0L</span>
+          </td>
+          <td>1.71</td>
+          <td style="width:120px">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+              <div style="width:100%;background:var(--win);border-radius:3px 0 0 3px"></div>
+              <div style="width:0%;background:var(--lose);border-radius:0 3px 3px 0"></div>
+            </div>
+          </td>
+        </tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-label"><em>03</em> — Position & Style</div>
+  <div class="card span-4">
+    <div class="card-title">Position Distribution</div>
+    <canvas id="posChart" height="240"></canvas>
+  </div>
+  <div class="card span-8">
+    <div class="card-title">Games & Winrate by Day of Week</div>
+    <canvas id="weekdayChart" height="240"></canvas>
+  </div>
+
+  <div class="section-label"><em>04</em> — Time Patterns</div>
+  <div class="card span-12">
+    <div class="card-title">Winrate & Volume by Hour of Day</div>
+    <canvas id="hourChart" height="110"></canvas>
+  </div>
+
+  <div class="section-label"><em>05</em> — Objective Impact</div>
+  <div class="card span-12">
+    <div class="card-title">Winrate With vs Without First Objective</div>
+    <div style="margin-top:4px">
+        <div class="obj-row">
+          <div class="obj-name">🩸 First Blood</div>
+          <div class="obj-bar-wrap">
+            <div class="obj-bar-with" style="width:53.9%"><span>53.9%</span></div>
+            <div class="obj-bar-without" style="width:46.1%"><span>54.5%</span></div>
+          </div>
+          <div class="obj-diff" style="color:#f87171">+-0.6%</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-name">🏰 First Tower</div>
+          <div class="obj-bar-wrap">
+            <div class="obj-bar-with" style="width:74.7%"><span>74.7%</span></div>
+            <div class="obj-bar-without" style="width:25.299999999999997%"><span>35.3%</span></div>
+          </div>
+          <div class="obj-diff" style="color:#4ade80">+39.4%</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-name">👑 First Baron</div>
+          <div class="obj-bar-wrap">
+            <div class="obj-bar-with" style="width:86.5%"><span>86.5%</span></div>
+            <div class="obj-bar-without" style="width:13.5%"><span>27.8%</span></div>
+          </div>
+          <div class="obj-diff" style="color:#4ade80">+58.7%</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-name">🐉 First Dragon</div>
+          <div class="obj-bar-wrap">
+            <div class="obj-bar-with" style="width:58.5%"><span>58.5%</span></div>
+            <div class="obj-bar-without" style="width:41.5%"><span>50.0%</span></div>
+          </div>
+          <div class="obj-diff" style="color:#4ade80">+8.5%</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-name">👁️ First Herald</div>
+          <div class="obj-bar-wrap">
+            <div class="obj-bar-with" style="width:71.2%"><span>71.2%</span></div>
+            <div class="obj-bar-without" style="width:28.799999999999997%"><span>42.9%</span></div>
+          </div>
+          <div class="obj-diff" style="color:#4ade80">+28.3%</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-name">💥 First Inhib</div>
+          <div class="obj-bar-wrap">
+            <div class="obj-bar-with" style="width:95.1%"><span>95.1%</span></div>
+            <div class="obj-bar-without" style="width:4.900000000000006%"><span>14.5%</span></div>
+          </div>
+          <div class="obj-diff" style="color:#4ade80">+80.6%</div>
+        </div></div>
+  </div>
+
+  <div class="section-label"><em>05b</em> — Objectives Secured</div>
+  <div class="card span-12">
+    <div class="card-title">Total Objectives Secured (your team)</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:26px;margin-bottom:8px">👑</div>
+          <div style="font-size:clamp(1.4rem,2vw,2.2rem);font-weight:700;color:#fff">99</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:4px">Barons</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:26px;margin-bottom:8px">🐉</div>
+          <div style="font-size:clamp(1.4rem,2vw,2.2rem);font-weight:700;color:#fff">367</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:4px">Dragons</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:26px;margin-bottom:8px">🐛</div>
+          <div style="font-size:clamp(1.4rem,2vw,2.2rem);font-weight:700;color:#fff">260</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:4px">Voidgrubs</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:26px;margin-bottom:8px">👁️</div>
+          <div style="font-size:clamp(1.4rem,2vw,2.2rem);font-weight:700;color:#fff">66</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:4px">Rift Heralds</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:26px;margin-bottom:8px">🏰</div>
+          <div style="font-size:clamp(1.4rem,2vw,2.2rem);font-weight:700;color:#fff">1,000</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:4px">Towers</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:26px;margin-bottom:8px">💀</div>
+          <div style="font-size:clamp(1.4rem,2vw,2.2rem);font-weight:700;color:#fff">10</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:4px">Atakhans</div>
+        </div></div>
+  </div>
+
+  <div class="section-label"><em>06</em> — Tilt Analysis</div>
+  <div class="card span-12">
+    <div class="card-title">Game by Game — Win/Loss Timeline</div>
+    <div class="tilt-grid" id="tiltGrid"></div>
+    <div style="display:flex;gap:20px;margin-top:12px;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"><div style="width:14px;height:14px;background:var(--win);border-radius:3px"></div>Win</div>
+      <div style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"><div style="width:14px;height:14px;background:var(--lose);border-radius:3px"></div>Loss</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-left:auto">89W · 75L</div>
+    </div>
+  </div>
+
+  <div class="section-label"><em>07</em> — Rank Progression</div>
+  <div class="card span-12">
+    <div class="card-title">LP Journey — Platinum III → Emerald III</div>
+    <canvas id="lpChart" height="130"></canvas>
+  </div>
+
+  <div class="section-label"><em>08</em> — Support Stats</div>
+  <div class="card span-12">
+    <div class="card-title">Support Performance (Utility games only)</div>
+    <div class="support-grid">
+      <div class="support-item"><div class="stat-big" style="color:var(--accent)">64.8</div><div class="stat-label">Avg Vision Score</div></div>
+      <div class="support-item"><div class="stat-big" style="color:var(--accent2)">24.7</div><div class="stat-label">Avg Wards Placed</div></div>
+      <div class="support-item"><div class="stat-big" style="color:var(--win)">4,454</div><div class="stat-label">Avg Heals on Teammates</div></div>
+      <div class="support-item"><div class="stat-big" style="color:var(--accent3)">2,423</div><div class="stat-label">Avg Shield Absorbed</div></div>
+    </div>
+  </div>
+
+  <div class="section-label"><em>09</em> — Performance by Role</div>
+  <div class="card span-12">
+    <div class="card-title">Stats by Position</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:24px;margin-bottom:8px">🏹</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:10px">BOTTOM</div>
+          <div style="font-size:1.8rem;font-weight:700;color:var(--win)">100.0%</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px">WIN RATE</div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:#fff">2</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">GAMES</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent)">4.84</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">KDA</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:0.9rem;font-weight:700;color:var(--accent2)">14,242</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG DMG</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent3)">136.0</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG CS</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:24px;margin-bottom:8px">🌲</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:10px">JUNGLE</div>
+          <div style="font-size:1.8rem;font-weight:700;color:var(--lose)">35.7%</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px">WIN RATE</div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:#fff">14</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">GAMES</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent)">2.94</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">KDA</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:0.9rem;font-weight:700;color:var(--accent2)">16,119</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG DMG</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent3)">149.1</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG CS</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:24px;margin-bottom:8px">🔮</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:10px">MIDDLE</div>
+          <div style="font-size:1.8rem;font-weight:700;color:var(--win)">77.8%</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px">WIN RATE</div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:#fff">9</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">GAMES</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent)">1.99</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">KDA</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:0.9rem;font-weight:700;color:var(--accent2)">29,793</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG DMG</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent3)">204.6</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG CS</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:24px;margin-bottom:8px">⚔️</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:10px">TOP</div>
+          <div style="font-size:1.8rem;font-weight:700;color:var(--win)">66.7%</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px">WIN RATE</div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:#fff">30</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">GAMES</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent)">2.79</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">KDA</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:0.9rem;font-weight:700;color:var(--accent2)">25,928</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG DMG</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent3)">195.4</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG CS</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;">
+          <div style="font-size:24px;margin-bottom:8px">🛡️</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:10px">UTILITY</div>
+          <div style="font-size:1.8rem;font-weight:700;color:var(--win)">50.5%</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px">WIN RATE</div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:#fff">109</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">GAMES</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent)">3.3</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">KDA</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:0.9rem;font-weight:700;color:var(--accent2)">11,154</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG DMG</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px;">
+              <div style="font-size:1rem;font-weight:700;color:var(--accent3)">34.0</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted)">AVG CS</div>
+            </div>
+          </div>
+        </div></div>
+  </div>
+
+</div>
+
+<div class="footer">RainyDaysInTokyo#3672 · EUW · Data via Riot Games API · 1.1.2026 – 4.4.2026</div>
+
+<script>
+const ACCENT='#7c83f5',ACCENT2='#f5a623',ACCENT3='#50e3c2',WIN='#52d68a',LOSE='#f56565',MUTED='#6b7090',TEXT='#eef0f8',TEXT2='#b0b4cc';
+Chart.defaults.color=TEXT2;
+Chart.defaults.borderColor='#343748';
+Chart.defaults.font.family="'JetBrains Mono', monospace";
+Chart.defaults.font.size=11;
+
+const posData={"UTILITY": 109, "TOP": 30, "JUNGLE": 14, "MIDDLE": 9, "BOTTOM": 2};
+new Chart(document.getElementById('posChart'),{
+  type:'doughnut',
+  data:{labels:Object.keys(posData),datasets:[{data:Object.values(posData),backgroundColor:[ACCENT,ACCENT2,ACCENT3,WIN,LOSE,MUTED],borderWidth:0,hoverOffset:8}]},
+  options:{plugins:{legend:{position:'right',labels:{padding:14,font:{size:12},color:TEXT}}},cutout:'68%'}
+});
+
+const weekData=[{"weekday": "Monday", "games": 22, "winrate": 63.6}, {"weekday": "Tuesday", "games": 31, "winrate": 48.4}, {"weekday": "Wednesday", "games": 23, "winrate": 39.1}, {"weekday": "Thursday", "games": 31, "winrate": 71.0}, {"weekday": "Friday", "games": 31, "winrate": 58.1}, {"weekday": "Saturday", "games": 21, "winrate": 47.6}, {"weekday": "Sunday", "games": 5, "winrate": 20.0}];
+new Chart(document.getElementById('weekdayChart'),{
+  type:'bar',
+  data:{
+    labels:weekData.map(d=>d.weekday.slice(0,3)),
+    datasets:[
+      {label:'Games',data:weekData.map(d=>d.games),backgroundColor:ACCENT+'33',borderColor:ACCENT,borderWidth:1,borderRadius:5,yAxisID:'y'},
+      {label:'Winrate %',data:weekData.map(d=>d.winrate),type:'line',borderColor:WIN,borderWidth:2,pointBackgroundColor:WIN,pointRadius:4,tension:0.4,yAxisID:'y1'}
+    ]
+  },
+  options:{
+    scales:{
+      y:{position:'left',grid:{color:'#34374833'},ticks:{color:TEXT2}},
+      y1:{position:'right',min:0,max:100,grid:{display:false},ticks:{color:TEXT2}}
+    },
+    plugins:{legend:{display:true,labels:{padding:14,color:TEXT}}}
+  }
+});
+
+const hourData=[{"hour": 0, "games": 1, "winrate": 0.0}, {"hour": 9, "games": 2, "winrate": 0.0}, {"hour": 10, "games": 4, "winrate": 50.0}, {"hour": 11, "games": 4, "winrate": 50.0}, {"hour": 12, "games": 2, "winrate": 100.0}, {"hour": 13, "games": 6, "winrate": 50.0}, {"hour": 14, "games": 3, "winrate": 33.3}, {"hour": 15, "games": 7, "winrate": 42.9}, {"hour": 16, "games": 7, "winrate": 42.9}, {"hour": 17, "games": 10, "winrate": 40.0}, {"hour": 18, "games": 18, "winrate": 72.2}, {"hour": 19, "games": 30, "winrate": 53.3}, {"hour": 20, "games": 39, "winrate": 56.4}, {"hour": 21, "games": 21, "winrate": 61.9}, {"hour": 22, "games": 8, "winrate": 50.0}, {"hour": 23, "games": 2, "winrate": 50.0}];
+new Chart(document.getElementById('hourChart'),{
+  type:'line',
+  data:{
+    labels:hourData.map(d=>d.hour+':00'),
+    datasets:[
+      {label:'Winrate %',data:hourData.map(d=>d.winrate),borderColor:ACCENT,backgroundColor:ACCENT+'18',fill:true,tension:0.4,pointBackgroundColor:ACCENT,pointRadius:3,yAxisID:'y'},
+      {label:'Games',data:hourData.map(d=>d.games),borderColor:ACCENT2,backgroundColor:'transparent',tension:0.4,pointBackgroundColor:ACCENT2,pointRadius:3,yAxisID:'y1'}
+    ]
+  },
+  options:{
+    scales:{
+      y:{min:0,max:100,grid:{color:'#34374833'},ticks:{color:TEXT2}},
+      y1:{position:'right',grid:{display:false},ticks:{color:TEXT2}}
+    }
+  }
+});
+
+const tiltData=[{"date": "2026-01-01", "win": true, "champion": "Kled"}, {"date": "2026-01-01", "win": true, "champion": "Nami"}, {"date": "2026-01-01", "win": false, "champion": "Bard"}, {"date": "2026-01-01", "win": true, "champion": "Shen"}, {"date": "2026-01-02", "win": false, "champion": "Nautilus"}, {"date": "2026-01-02", "win": true, "champion": "Lux"}, {"date": "2026-01-02", "win": true, "champion": "Irelia"}, {"date": "2026-01-02", "win": false, "champion": "TahmKench"}, {"date": "2026-01-02", "win": true, "champion": "Karma"}, {"date": "2026-01-03", "win": true, "champion": "Mel"}, {"date": "2026-01-03", "win": true, "champion": "Lux"}, {"date": "2026-01-03", "win": true, "champion": "Shaco"}, {"date": "2026-01-03", "win": true, "champion": "Yasuo"}, {"date": "2026-01-04", "win": false, "champion": "Shaco"}, {"date": "2026-01-04", "win": false, "champion": "Morgana"}, {"date": "2026-01-04", "win": true, "champion": "Kled"}, {"date": "2026-01-07", "win": false, "champion": "Senna"}, {"date": "2026-01-07", "win": false, "champion": "Senna"}, {"date": "2026-01-07", "win": false, "champion": "Camille"}, {"date": "2026-01-08", "win": true, "champion": "Thresh"}, {"date": "2026-01-08", "win": false, "champion": "TahmKench"}, {"date": "2026-01-09", "win": true, "champion": "Malphite"}, {"date": "2026-01-10", "win": true, "champion": "Blitzcrank"}, {"date": "2026-01-10", "win": false, "champion": "Lux"}, {"date": "2026-01-10", "win": true, "champion": "Gwen"}, {"date": "2026-01-10", "win": true, "champion": "Milio"}, {"date": "2026-01-10", "win": false, "champion": "Milio"}, {"date": "2026-01-10", "win": false, "champion": "Viktor"}, {"date": "2026-01-12", "win": true, "champion": "Senna"}, {"date": "2026-01-12", "win": false, "champion": "Lulu"}, {"date": "2026-01-12", "win": true, "champion": "Viktor"}, {"date": "2026-01-13", "win": false, "champion": "Braum"}, {"date": "2026-01-13", "win": false, "champion": "Karma"}, {"date": "2026-01-13", "win": true, "champion": "Gnar"}, {"date": "2026-01-13", "win": true, "champion": "Senna"}, {"date": "2026-01-13", "win": true, "champion": "TahmKench"}, {"date": "2026-01-14", "win": false, "champion": "Ornn"}, {"date": "2026-01-14", "win": false, "champion": "Swain"}, {"date": "2026-01-14", "win": true, "champion": "Milio"}, {"date": "2026-01-14", "win": false, "champion": "DrMundo"}, {"date": "2026-01-14", "win": false, "champion": "Pantheon"}, {"date": "2026-01-14", "win": false, "champion": "TahmKench"}, {"date": "2026-01-14", "win": true, "champion": "Sett"}, {"date": "2026-01-14", "win": true, "champion": "Lux"}, {"date": "2026-01-14", "win": false, "champion": "Lux"}, {"date": "2026-01-14", "win": true, "champion": "Akali"}, {"date": "2026-01-14", "win": true, "champion": "Rakan"}, {"date": "2026-01-15", "win": true, "champion": "Rakan"}, {"date": "2026-01-15", "win": true, "champion": "AurelionSol"}, {"date": "2026-01-15", "win": true, "champion": "TwistedFate"}, {"date": "2026-01-15", "win": true, "champion": "Lux"}, {"date": "2026-01-20", "win": false, "champion": "Zaahen"}, {"date": "2026-01-20", "win": false, "champion": "Thresh"}, {"date": "2026-01-20", "win": false, "champion": "Senna"}, {"date": "2026-01-22", "win": true, "champion": "Galio"}, {"date": "2026-01-22", "win": true, "champion": "Poppy"}, {"date": "2026-01-22", "win": true, "champion": "Thresh"}, {"date": "2026-01-22", "win": false, "champion": "Zaahen"}, {"date": "2026-01-22", "win": false, "champion": "Pyke"}, {"date": "2026-01-22", "win": true, "champion": "Soraka"}, {"date": "2026-01-25", "win": false, "champion": "Zaahen"}, {"date": "2026-01-25", "win": false, "champion": "Soraka"}, {"date": "2026-01-26", "win": true, "champion": "Soraka"}, {"date": "2026-01-28", "win": true, "champion": "Karma"}, {"date": "2026-01-28", "win": false, "champion": "Briar"}, {"date": "2026-01-29", "win": true, "champion": "Nami"}, {"date": "2026-01-29", "win": true, "champion": "Zilean"}, {"date": "2026-01-29", "win": true, "champion": "Lillia"}, {"date": "2026-01-29", "win": true, "champion": "Karma"}, {"date": "2026-01-29", "win": true, "champion": "Poppy"}, {"date": "2026-01-29", "win": false, "champion": "Ivern"}, {"date": "2026-01-30", "win": false, "champion": "Soraka"}, {"date": "2026-01-30", "win": true, "champion": "Poppy"}, {"date": "2026-01-30", "win": false, "champion": "Ivern"}, {"date": "2026-01-31", "win": false, "champion": "Zilean"}, {"date": "2026-01-31", "win": false, "champion": "Zilean"}, {"date": "2026-01-31", "win": true, "champion": "Shaco"}, {"date": "2026-02-02", "win": true, "champion": "TwistedFate"}, {"date": "2026-02-02", "win": true, "champion": "Soraka"}, {"date": "2026-02-03", "win": false, "champion": "Shaco"}, {"date": "2026-02-03", "win": true, "champion": "Nami"}, {"date": "2026-02-03", "win": false, "champion": "Soraka"}, {"date": "2026-02-03", "win": true, "champion": "Shaco"}, {"date": "2026-02-05", "win": true, "champion": "Pantheon"}, {"date": "2026-02-05", "win": true, "champion": "Poppy"}, {"date": "2026-02-05", "win": false, "champion": "Shaco"}, {"date": "2026-02-05", "win": false, "champion": "Karma"}, {"date": "2026-02-05", "win": false, "champion": "Thresh"}, {"date": "2026-02-05", "win": true, "champion": "Shaco"}, {"date": "2026-02-09", "win": false, "champion": "Thresh"}, {"date": "2026-02-09", "win": true, "champion": "TwistedFate"}, {"date": "2026-02-09", "win": false, "champion": "Shaco"}, {"date": "2026-02-13", "win": true, "champion": "Zilean"}, {"date": "2026-02-13", "win": false, "champion": "Shaco"}, {"date": "2026-02-13", "win": true, "champion": "Orianna"}, {"date": "2026-02-13", "win": true, "champion": "Shaco"}, {"date": "2026-02-14", "win": false, "champion": "Shaco"}, {"date": "2026-02-23", "win": true, "champion": "Janna"}, {"date": "2026-02-23", "win": false, "champion": "Poppy"}, {"date": "2026-02-23", "win": false, "champion": "Shaco"}, {"date": "2026-02-23", "win": true, "champion": "Soraka"}, {"date": "2026-02-24", "win": false, "champion": "Milio"}, {"date": "2026-02-24", "win": false, "champion": "XinZhao"}, {"date": "2026-02-24", "win": true, "champion": "Shaco"}, {"date": "2026-02-24", "win": false, "champion": "Shaco"}, {"date": "2026-02-26", "win": true, "champion": "Shaco"}, {"date": "2026-03-02", "win": false, "champion": "Shaco"}, {"date": "2026-03-02", "win": false, "champion": "Zilean"}, {"date": "2026-03-03", "win": true, "champion": "Sona"}, {"date": "2026-03-03", "win": true, "champion": "Shaco"}, {"date": "2026-03-03", "win": false, "champion": "Nami"}, {"date": "2026-03-05", "win": false, "champion": "Shaco"}, {"date": "2026-03-05", "win": true, "champion": "Zilean"}, {"date": "2026-03-10", "win": false, "champion": "Leona"}, {"date": "2026-03-10", "win": false, "champion": "XinZhao"}, {"date": "2026-03-10", "win": false, "champion": "Shaco"}, {"date": "2026-03-13", "win": true, "champion": "Shaco"}, {"date": "2026-03-13", "win": true, "champion": "Ashe"}, {"date": "2026-03-13", "win": false, "champion": "Nami"}, {"date": "2026-03-13", "win": true, "champion": "Yuumi"}, {"date": "2026-03-13", "win": false, "champion": "Aurora"}, {"date": "2026-03-13", "win": false, "champion": "Leona"}, {"date": "2026-03-23", "win": true, "champion": "Ezreal"}, {"date": "2026-03-23", "win": true, "champion": "KSante"}, {"date": "2026-03-23", "win": false, "champion": "Fiora"}, {"date": "2026-03-23", "win": true, "champion": "Ornn"}, {"date": "2026-03-24", "win": true, "champion": "DrMundo"}, {"date": "2026-03-24", "win": true, "champion": "Nami"}, {"date": "2026-03-24", "win": true, "champion": "Yorick"}, {"date": "2026-03-24", "win": false, "champion": "Sona"}, {"date": "2026-03-24", "win": true, "champion": "Karma"}, {"date": "2026-03-24", "win": false, "champion": "Shen"}, {"date": "2026-03-24", "win": true, "champion": "Milio"}, {"date": "2026-03-24", "win": true, "champion": "Milio"}, {"date": "2026-03-24", "win": true, "champion": "Kled"}, {"date": "2026-03-28", "win": false, "champion": "Nami"}, {"date": "2026-03-28", "win": false, "champion": "Seraphine"}, {"date": "2026-03-28", "win": true, "champion": "Kled"}, {"date": "2026-03-28", "win": true, "champion": "Thresh"}, {"date": "2026-03-28", "win": false, "champion": "Renata"}, {"date": "2026-03-28", "win": false, "champion": "Sett"}, {"date": "2026-03-28", "win": false, "champion": "Blitzcrank"}, {"date": "2026-03-30", "win": true, "champion": "Alistar"}, {"date": "2026-03-30", "win": true, "champion": "Aatrox"}, {"date": "2026-03-30", "win": true, "champion": "Renata"}, {"date": "2026-04-01", "win": false, "champion": "Rakan"}, {"date": "2026-04-01", "win": true, "champion": "Renata"}, {"date": "2026-04-01", "win": false, "champion": "Shyvana"}, {"date": "2026-04-01", "win": false, "champion": "Renata"}, {"date": "2026-04-01", "win": true, "champion": "Orianna"}, {"date": "2026-04-01", "win": false, "champion": "TwistedFate"}, {"date": "2026-04-01", "win": true, "champion": "Sion"}, {"date": "2026-04-03", "win": false, "champion": "Milio"}, {"date": "2026-04-03", "win": false, "champion": "Orianna"}, {"date": "2026-04-03", "win": true, "champion": "Sett"}, {"date": "2026-04-03", "win": false, "champion": "Milio"}, {"date": "2026-04-03", "win": true, "champion": "Thresh"}, {"date": "2026-04-03", "win": true, "champion": "Sett"}, {"date": "2026-04-03", "win": false, "champion": "TahmKench"}, {"date": "2026-04-03", "win": true, "champion": "Senna"}, {"date": "2026-04-03", "win": true, "champion": "Sett"}, {"date": "2026-04-03", "win": true, "champion": "Senna"}, {"date": "2026-04-03", "win": false, "champion": "Morgana"}, {"date": "2026-04-03", "win": true, "champion": "Sett"}];
+const tiltGrid=document.getElementById('tiltGrid');
+tiltData.forEach(g=>{
+  const dot=document.createElement('div');
+  dot.className='tilt-dot';
+  dot.style.background=g.win?WIN:LOSE;
+  dot.title=g.date+' · '+g.champion+' · '+(g.win?'WIN':'LOSS');
+  tiltGrid.appendChild(dot);
+});
+
+const lpData=[{"date": "2026-01-01", "lp": 22, "win": true, "champion": "Kled", "change": 22}, {"date": "2026-01-01", "lp": 39, "win": true, "champion": "Nami", "change": 17}, {"date": "2026-01-01", "lp": 24, "win": false, "champion": "Bard", "change": -15}, {"date": "2026-01-01", "lp": 46, "win": true, "champion": "Shen", "change": 22}, {"date": "2026-01-02", "lp": 29, "win": false, "champion": "Nautilus", "change": -17}, {"date": "2026-01-02", "lp": 47, "win": true, "champion": "Lux", "change": 18}, {"date": "2026-01-02", "lp": 65, "win": true, "champion": "Irelia", "change": 18}, {"date": "2026-01-02", "lp": 49, "win": false, "champion": "TahmKench", "change": -16}, {"date": "2026-01-02", "lp": 71, "win": true, "champion": "Karma", "change": 22}, {"date": "2026-01-03", "lp": 88, "win": true, "champion": "Mel", "change": 17}, {"date": "2026-01-03", "lp": 110, "win": true, "champion": "Lux", "change": 22}, {"date": "2026-01-03", "lp": 132, "win": true, "champion": "Shaco", "change": 22}, {"date": "2026-01-03", "lp": 153, "win": true, "champion": "Yasuo", "change": 21}, {"date": "2026-01-04", "lp": 138, "win": false, "champion": "Shaco", "change": -15}, {"date": "2026-01-04", "lp": 119, "win": false, "champion": "Morgana", "change": -19}, {"date": "2026-01-04", "lp": 139, "win": true, "champion": "Kled", "change": 20}, {"date": "2026-01-07", "lp": 124, "win": false, "champion": "Senna", "change": -15}, {"date": "2026-01-07", "lp": 109, "win": false, "champion": "Senna", "change": -15}, {"date": "2026-01-07", "lp": 94, "win": false, "champion": "Camille", "change": -15}, {"date": "2026-01-08", "lp": 112, "win": true, "champion": "Thresh", "change": 18}, {"date": "2026-01-08", "lp": 96, "win": false, "champion": "TahmKench", "change": -16}, {"date": "2026-01-09", "lp": 117, "win": true, "champion": "Malphite", "change": 21}, {"date": "2026-01-10", "lp": 138, "win": true, "champion": "Blitzcrank", "change": 21}, {"date": "2026-01-10", "lp": 123, "win": false, "champion": "Lux", "change": -15}, {"date": "2026-01-10", "lp": 144, "win": true, "champion": "Gwen", "change": 21}, {"date": "2026-01-10", "lp": 162, "win": true, "champion": "Milio", "change": 18}, {"date": "2026-01-10", "lp": 142, "win": false, "champion": "Milio", "change": -20}, {"date": "2026-01-10", "lp": 122, "win": false, "champion": "Viktor", "change": -20}, {"date": "2026-01-12", "lp": 144, "win": true, "champion": "Senna", "change": 22}, {"date": "2026-01-12", "lp": 125, "win": false, "champion": "Lulu", "change": -19}, {"date": "2026-01-12", "lp": 145, "win": true, "champion": "Viktor", "change": 20}, {"date": "2026-01-13", "lp": 129, "win": false, "champion": "Braum", "change": -16}, {"date": "2026-01-13", "lp": 111, "win": false, "champion": "Karma", "change": -18}, {"date": "2026-01-13", "lp": 132, "win": true, "champion": "Gnar", "change": 21}, {"date": "2026-01-13", "lp": 151, "win": true, "champion": "Senna", "change": 19}, {"date": "2026-01-13", "lp": 174, "win": true, "champion": "TahmKench", "change": 23}, {"date": "2026-01-14", "lp": 153, "win": false, "champion": "Ornn", "change": -21}, {"date": "2026-01-14", "lp": 138, "win": false, "champion": "Swain", "change": -15}, {"date": "2026-01-14", "lp": 161, "win": true, "champion": "Milio", "change": 23}, {"date": "2026-01-14", "lp": 140, "win": false, "champion": "DrMundo", "change": -21}, {"date": "2026-01-14", "lp": 124, "win": false, "champion": "Pantheon", "change": -16}, {"date": "2026-01-14", "lp": 104, "win": false, "champion": "TahmKench", "change": -20}, {"date": "2026-01-14", "lp": 124, "win": true, "champion": "Sett", "change": 20}, {"date": "2026-01-14", "lp": 143, "win": true, "champion": "Lux", "change": 19}, {"date": "2026-01-14", "lp": 126, "win": false, "champion": "Lux", "change": -17}, {"date": "2026-01-14", "lp": 144, "win": true, "champion": "Akali", "change": 18}, {"date": "2026-01-14", "lp": 162, "win": true, "champion": "Rakan", "change": 18}, {"date": "2026-01-15", "lp": 185, "win": true, "champion": "Rakan", "change": 23}, {"date": "2026-01-15", "lp": 204, "win": true, "champion": "AurelionSol", "change": 19}, {"date": "2026-01-15", "lp": 221, "win": true, "champion": "TwistedFate", "change": 17}, {"date": "2026-01-15", "lp": 238, "win": true, "champion": "Lux", "change": 17}, {"date": "2026-01-20", "lp": 220, "win": false, "champion": "Zaahen", "change": -18}, {"date": "2026-01-20", "lp": 205, "win": false, "champion": "Thresh", "change": -15}, {"date": "2026-01-20", "lp": 188, "win": false, "champion": "Senna", "change": -17}, {"date": "2026-01-22", "lp": 211, "win": true, "champion": "Galio", "change": 23}, {"date": "2026-01-22", "lp": 230, "win": true, "champion": "Poppy", "change": 19}, {"date": "2026-01-22", "lp": 251, "win": true, "champion": "Thresh", "change": 21}, {"date": "2026-01-22", "lp": 234, "win": false, "champion": "Zaahen", "change": -17}, {"date": "2026-01-22", "lp": 213, "win": false, "champion": "Pyke", "change": -21}, {"date": "2026-01-22", "lp": 230, "win": true, "champion": "Soraka", "change": 17}, {"date": "2026-01-25", "lp": 210, "win": false, "champion": "Zaahen", "change": -20}, {"date": "2026-01-25", "lp": 192, "win": false, "champion": "Soraka", "change": -18}, {"date": "2026-01-26", "lp": 213, "win": true, "champion": "Soraka", "change": 21}, {"date": "2026-01-28", "lp": 230, "win": true, "champion": "Karma", "change": 17}, {"date": "2026-01-28", "lp": 212, "win": false, "champion": "Briar", "change": -18}, {"date": "2026-01-29", "lp": 229, "win": true, "champion": "Nami", "change": 17}, {"date": "2026-01-29", "lp": 250, "win": true, "champion": "Zilean", "change": 21}, {"date": "2026-01-29", "lp": 269, "win": true, "champion": "Lillia", "change": 19}, {"date": "2026-01-29", "lp": 292, "win": true, "champion": "Karma", "change": 23}, {"date": "2026-01-29", "lp": 314, "win": true, "champion": "Poppy", "change": 22}, {"date": "2026-01-29", "lp": 295, "win": false, "champion": "Ivern", "change": -19}, {"date": "2026-01-30", "lp": 274, "win": false, "champion": "Soraka", "change": -21}, {"date": "2026-01-30", "lp": 293, "win": true, "champion": "Poppy", "change": 19}, {"date": "2026-01-30", "lp": 274, "win": false, "champion": "Ivern", "change": -19}, {"date": "2026-01-31", "lp": 258, "win": false, "champion": "Zilean", "change": -16}, {"date": "2026-01-31", "lp": 238, "win": false, "champion": "Zilean", "change": -20}, {"date": "2026-01-31", "lp": 255, "win": true, "champion": "Shaco", "change": 17}, {"date": "2026-02-02", "lp": 272, "win": true, "champion": "TwistedFate", "change": 17}, {"date": "2026-02-02", "lp": 294, "win": true, "champion": "Soraka", "change": 22}, {"date": "2026-02-03", "lp": 278, "win": false, "champion": "Shaco", "change": -16}, {"date": "2026-02-03", "lp": 301, "win": true, "champion": "Nami", "change": 23}, {"date": "2026-02-03", "lp": 284, "win": false, "champion": "Soraka", "change": -17}, {"date": "2026-02-03", "lp": 301, "win": true, "champion": "Shaco", "change": 17}, {"date": "2026-02-05", "lp": 324, "win": true, "champion": "Pantheon", "change": 23}, {"date": "2026-02-05", "lp": 342, "win": true, "champion": "Poppy", "change": 18}, {"date": "2026-02-05", "lp": 321, "win": false, "champion": "Shaco", "change": -21}, {"date": "2026-02-05", "lp": 306, "win": false, "champion": "Karma", "change": -15}, {"date": "2026-02-05", "lp": 288, "win": false, "champion": "Thresh", "change": -18}, {"date": "2026-02-05", "lp": 307, "win": true, "champion": "Shaco", "change": 19}, {"date": "2026-02-09", "lp": 289, "win": false, "champion": "Thresh", "change": -18}, {"date": "2026-02-09", "lp": 311, "win": true, "champion": "TwistedFate", "change": 22}, {"date": "2026-02-09", "lp": 290, "win": false, "champion": "Shaco", "change": -21}, {"date": "2026-02-13", "lp": 309, "win": true, "champion": "Zilean", "change": 19}, {"date": "2026-02-13", "lp": 293, "win": false, "champion": "Shaco", "change": -16}, {"date": "2026-02-13", "lp": 312, "win": true, "champion": "Orianna", "change": 19}, {"date": "2026-02-13", "lp": 331, "win": true, "champion": "Shaco", "change": 19}, {"date": "2026-02-14", "lp": 315, "win": false, "champion": "Shaco", "change": -16}, {"date": "2026-02-23", "lp": 337, "win": true, "champion": "Janna", "change": 22}, {"date": "2026-02-23", "lp": 320, "win": false, "champion": "Poppy", "change": -17}, {"date": "2026-02-23", "lp": 300, "win": false, "champion": "Shaco", "change": -20}, {"date": "2026-02-23", "lp": 322, "win": true, "champion": "Soraka", "change": 22}, {"date": "2026-02-24", "lp": 302, "win": false, "champion": "Milio", "change": -20}, {"date": "2026-02-24", "lp": 287, "win": false, "champion": "XinZhao", "change": -15}, {"date": "2026-02-24", "lp": 308, "win": true, "champion": "Shaco", "change": 21}, {"date": "2026-02-24", "lp": 288, "win": false, "champion": "Shaco", "change": -20}, {"date": "2026-02-26", "lp": 306, "win": true, "champion": "Shaco", "change": 18}, {"date": "2026-03-02", "lp": 287, "win": false, "champion": "Shaco", "change": -19}, {"date": "2026-03-02", "lp": 267, "win": false, "champion": "Zilean", "change": -20}, {"date": "2026-03-03", "lp": 285, "win": true, "champion": "Sona", "change": 18}, {"date": "2026-03-03", "lp": 303, "win": true, "champion": "Shaco", "change": 18}, {"date": "2026-03-03", "lp": 285, "win": false, "champion": "Nami", "change": -18}, {"date": "2026-03-05", "lp": 267, "win": false, "champion": "Shaco", "change": -18}, {"date": "2026-03-05", "lp": 286, "win": true, "champion": "Zilean", "change": 19}, {"date": "2026-03-10", "lp": 266, "win": false, "champion": "Leona", "change": -20}, {"date": "2026-03-10", "lp": 246, "win": false, "champion": "XinZhao", "change": -20}, {"date": "2026-03-10", "lp": 227, "win": false, "champion": "Shaco", "change": -19}, {"date": "2026-03-13", "lp": 245, "win": true, "champion": "Shaco", "change": 18}, {"date": "2026-03-13", "lp": 267, "win": true, "champion": "Ashe", "change": 22}, {"date": "2026-03-13", "lp": 250, "win": false, "champion": "Nami", "change": -17}, {"date": "2026-03-13", "lp": 273, "win": true, "champion": "Yuumi", "change": 23}, {"date": "2026-03-13", "lp": 252, "win": false, "champion": "Aurora", "change": -21}, {"date": "2026-03-13", "lp": 231, "win": false, "champion": "Leona", "change": -21}, {"date": "2026-03-23", "lp": 248, "win": true, "champion": "Ezreal", "change": 17}, {"date": "2026-03-23", "lp": 266, "win": true, "champion": "KSante", "change": 18}, {"date": "2026-03-23", "lp": 245, "win": false, "champion": "Fiora", "change": -21}, {"date": "2026-03-23", "lp": 262, "win": true, "champion": "Ornn", "change": 17}, {"date": "2026-03-24", "lp": 285, "win": true, "champion": "DrMundo", "change": 23}, {"date": "2026-03-24", "lp": 304, "win": true, "champion": "Nami", "change": 19}, {"date": "2026-03-24", "lp": 324, "win": true, "champion": "Yorick", "change": 20}, {"date": "2026-03-24", "lp": 307, "win": false, "champion": "Sona", "change": -17}, {"date": "2026-03-24", "lp": 324, "win": true, "champion": "Karma", "change": 17}, {"date": "2026-03-24", "lp": 308, "win": false, "champion": "Shen", "change": -16}, {"date": "2026-03-24", "lp": 329, "win": true, "champion": "Milio", "change": 21}, {"date": "2026-03-24", "lp": 351, "win": true, "champion": "Milio", "change": 22}, {"date": "2026-03-24", "lp": 370, "win": true, "champion": "Kled", "change": 19}, {"date": "2026-03-28", "lp": 354, "win": false, "champion": "Nami", "change": -16}, {"date": "2026-03-28", "lp": 334, "win": false, "champion": "Seraphine", "change": -20}, {"date": "2026-03-28", "lp": 354, "win": true, "champion": "Kled", "change": 20}, {"date": "2026-03-28", "lp": 374, "win": true, "champion": "Thresh", "change": 20}, {"date": "2026-03-28", "lp": 354, "win": false, "champion": "Renata", "change": -20}, {"date": "2026-03-28", "lp": 336, "win": false, "champion": "Sett", "change": -18}, {"date": "2026-03-28", "lp": 320, "win": false, "champion": "Blitzcrank", "change": -16}, {"date": "2026-03-30", "lp": 339, "win": true, "champion": "Alistar", "change": 19}, {"date": "2026-03-30", "lp": 357, "win": true, "champion": "Aatrox", "change": 18}, {"date": "2026-03-30", "lp": 375, "win": true, "champion": "Renata", "change": 18}, {"date": "2026-04-01", "lp": 355, "win": false, "champion": "Rakan", "change": -20}, {"date": "2026-04-01", "lp": 376, "win": true, "champion": "Renata", "change": 21}, {"date": "2026-04-01", "lp": 357, "win": false, "champion": "Shyvana", "change": -19}, {"date": "2026-04-01", "lp": 340, "win": false, "champion": "Renata", "change": -17}, {"date": "2026-04-01", "lp": 362, "win": true, "champion": "Orianna", "change": 22}, {"date": "2026-04-01", "lp": 343, "win": false, "champion": "TwistedFate", "change": -19}, {"date": "2026-04-01", "lp": 363, "win": true, "champion": "Sion", "change": 20}, {"date": "2026-04-03", "lp": 344, "win": false, "champion": "Milio", "change": -19}, {"date": "2026-04-03", "lp": 326, "win": false, "champion": "Orianna", "change": -18}, {"date": "2026-04-03", "lp": 345, "win": true, "champion": "Sett", "change": 19}, {"date": "2026-04-03", "lp": 329, "win": false, "champion": "Milio", "change": -16}, {"date": "2026-04-03", "lp": 347, "win": true, "champion": "Thresh", "change": 18}, {"date": "2026-04-03", "lp": 368, "win": true, "champion": "Sett", "change": 21}, {"date": "2026-04-03", "lp": 350, "win": false, "champion": "TahmKench", "change": -18}, {"date": "2026-04-03", "lp": 367, "win": true, "champion": "Senna", "change": 17}, {"date": "2026-04-03", "lp": 390, "win": true, "champion": "Sett", "change": 23}, {"date": "2026-04-03", "lp": 407, "win": true, "champion": "Senna", "change": 17}, {"date": "2026-04-03", "lp": 386, "win": false, "champion": "Morgana", "change": -21}, {"date": "2026-04-03", "lp": 403, "win": true, "champion": "Sett", "change": 17}];
+const lpCtx=document.getElementById('lpChart');
+const lpGrad=lpCtx.getContext('2d').createLinearGradient(0,0,0,300);
+lpGrad.addColorStop(0,ACCENT+'44');
+lpGrad.addColorStop(1,ACCENT+'00');
+new Chart(lpCtx,{
+  type:'line',
+  data:{
+    labels:lpData.map((d,i)=>i%20===0?d.date:''),
+    datasets:[{label:'Relative LP',data:lpData.map(d=>d.lp),borderColor:ACCENT,backgroundColor:lpGrad,fill:true,tension:0.3,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:ACCENT,borderWidth:2}]
+  },
+  options:{
+    scales:{
+      y:{grid:{color:'#34374833'},ticks:{callback:v=>v>0?'+'+v:v,color:TEXT2}},
+      x:{grid:{display:false},ticks:{color:TEXT2}}
+    },
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{
+        title:(items)=>lpData[items[0].dataIndex].date,
+        label:(item)=>lpData[item.dataIndex].champion+' · '+(lpData[item.dataIndex].win?'WIN +':'LOSS ')+Math.abs(lpData[item.dataIndex].change)+' LP'
+      }}
+    }
+  }
+});
+</script>
+</body>
+</html>
